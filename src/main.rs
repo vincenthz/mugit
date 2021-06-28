@@ -28,6 +28,7 @@ fn main() {
     const ARG_SPEC: &str = "spec";
     const ARG_PROJECT: &str = "project";
     const ARG_BRANCH: &str = "branch";
+    const ARG_OR_BRANCH: &str = "or-branch";
     const ARG_TAG: &str = "tag";
     const ARG_CONTINUE_ON_FAIL: &str = "continue-on-fail";
     const ARG_CONTINUE_IF_EXISTS: &str = "continue-if-exists";
@@ -175,7 +176,14 @@ fn main() {
                 .arg(&arg_manifest_dest)
                 .arg(&arg_continue_if_exists)
                 .arg(arg_tag("specify which tag to set to the project"))
-                .arg(arg_branch("specify which branch the tag apply to")),
+                .arg(arg_branch("specify which branch the tag apply to"))
+                .arg(
+                    Arg::new(ARG_OR_BRANCH)
+                        .about("set a backup branch if branch is not found")
+                        .long("or-branch")
+                        .required(false)
+                        .takes_value(true),
+                ),
         )
         .subcommand(
             App::new(SUBCMD_MANIFEST_HAS_CHANGE)
@@ -267,10 +275,19 @@ fn main() {
     } else if let Some(m) = matches.subcommand_matches(SUBCMD_MANIFEST_SET_TAG) {
         set_manifest_options(&mut app_params, m);
         let branch = m.value_of(ARG_BRANCH).unwrap();
+        let or_branch = m.value_of(ARG_OR_BRANCH);
         let tag = m.value_of(ARG_TAG).unwrap();
         let skip_push = m.is_present(ARG_SKIP_PUSH);
         let continue_if_exists = m.is_present(ARG_CONTINUE_IF_EXISTS);
-        manifest_set_tag(&app_params, branch, tag, skip_push, continue_if_exists).unwrap()
+        manifest_set_tag(
+            &app_params,
+            branch,
+            tag,
+            skip_push,
+            continue_if_exists,
+            or_branch,
+        )
+        .unwrap()
     } else if let Some(m) = matches.subcommand_matches(SUBCMD_MANIFEST_HAS_CHANGE) {
         set_manifest_options(&mut app_params, m);
         let tag = m.value_of(ARG_TAG).unwrap();

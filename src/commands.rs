@@ -337,12 +337,33 @@ pub fn manifest_has_tag(app_params: &AppParams, tag: &str) -> anyhow::Result<()>
     Ok(())
 }
 
+fn find_branch_commit<'a>(
+    repo: &'a Repository,
+    project: &'a Project,
+    branch: &str,
+    or_branch: Option<&str>,
+) -> Result<git2::Commit<'a>, String> {
+    match githelp::remote_resolve_branch(repo, &project.remote_name, branch) {
+        Ok(commit) => Ok(commit),
+        Err(_e1) => match or_branch {
+            Some(or_branch) => {
+                match githelp::remote_resolve_branch(repo, &project.remote_name, or_branch) {
+                    Ok(commit2) => Ok(commit2),
+                    Err(_e2) => Err(format!("branch {} or {} not available", branch, or_branch)),
+                }
+            }
+            None => Err(format!("branch {} not available", branch)),
+        },
+    }
+}
+
 pub fn manifest_set_tag(
     app_params: &AppParams,
     branch: &str,
     tag: &str,
     skip_push: bool,
     continue_if_exists: bool,
+    or_branch: Option<&str>,
 ) -> anyhow::Result<()> {
     // first chunk test that all repos are ok
     let _r = on_project_repos(app_params, |project, dest_repo, name| {
@@ -357,8 +378,8 @@ pub fn manifest_set_tag(
             anyhow::bail!("tag exists")
         }
 
-        let _commit = githelp::remote_resolve_branch(&repo, &project.remote_name, branch)
-            .expect("resolve branch");
+        let _commit =
+            find_branch_commit(&repo, project, branch, or_branch).expect("resolve branch");
 
         Ok(())
     })?;
@@ -367,14 +388,18 @@ pub fn manifest_set_tag(
     on_project_repos(app_params, |project, dest_repo, name| {
         let repo = Repository::open(&dest_repo).expect("git repository");
 
-        let commit = githelp::remote_resolve_branch(&repo, &project.remote_name, branch)
-            .expect("resolve branch");
+        let commit = find_branch_commit(&repo, project, branch, or_branch).expect("resolve branch");
 
         println!("{}: tagging repo with commit {}", name, commit.id());
 
+        let dry_run = false;
         let target = commit.into_object();
-        repo.tag_lightweight(tag, &target, false)
-            .expect("tag failed");
+        if dry_run {
+            ()
+        } else {
+            repo.tag_lightweight(tag, &target, false)
+                .expect("tag failed");
+        }
 
         if skip_push {
             println!(
