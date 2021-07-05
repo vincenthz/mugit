@@ -176,16 +176,31 @@ fn git_fetch_all(app_params: &AppParams, repo: &Repository) {
     }
 }
 
-fn git_push_to(app_params: &AppParams, project: &Project, repo: &Repository, tag: &str) {
+pub enum PushSpecifier<'a> {
+    Tag(&'a str),
+    Branch(&'a str),
+}
+
+fn git_push_to<'a>(
+    app_params: &AppParams,
+    project: &Project,
+    repo: &Repository,
+    spec: PushSpecifier<'a>,
+) {
     if app_params.git_exec {
         let workdir = repo.workdir().expect("workdir exists");
         let path = repo.path();
+        let spec_str = match spec {
+            PushSpecifier::Tag(s) => s,
+            PushSpecifier::Branch(s) => s,
+        };
+
         let _out = Command::new("git")
             .arg(&format!("--git-dir={}", path.to_str().unwrap()))
             .arg(&format!("--work-tree={}", workdir.to_str().unwrap()))
             .arg("push")
             .arg(&project.remote_name)
-            .arg(tag)
+            .arg(spec_str)
             .output()
             .expect("git failed to start");
     } else {
@@ -197,7 +212,10 @@ fn git_push_to(app_params: &AppParams, project: &Project, repo: &Repository, tag
         let mut push_options = git2::PushOptions::new();
         push_options.remote_callbacks(callbacks);
 
-        let ref_to_push = format!("refs/tags/{}", tag);
+        let ref_to_push = match spec {
+            PushSpecifier::Tag(tag) => format!("refs/tags/{}", tag),
+            PushSpecifier::Branch(branch) => format!("refs/heads/{}", branch),
+        };
 
         remote
             .push(&[ref_to_push], Some(&mut push_options))
@@ -357,6 +375,112 @@ fn find_branch_commit<'a>(
     }
 }
 
+pub fn manifest_set_branch(
+    app_params: &AppParams,
+    name_branch: &str,
+    commit: &str,
+    skip_push: bool,
+    continue_if_exists: bool,
+) -> anyhow::Result<()> {
+    on_project_repos(app_params, |project, dest_repo, name| {
+        let repo = Repository::open(&dest_repo).expect("git repository");
+
+        let has_branch =
+            match githelp::remote_resolve_branch(&repo, &project.remote_name, name_branch) {
+                Ok(_commit) => true,
+                Err(_e1) => false,
+            };
+        if has_branch {
+            repo_report_error(name, &format!("branch {} already exist", name_branch));
+            if !continue_if_exists {
+                anyhow::bail!("branch exists")
+            }
+            return Ok(());
+        }
+
+        let target = match githelp::remote_resolve_branch(&repo, &project.remote_name, commit) {
+            Ok(commit) => commit,
+            Err(_e1) => {
+                println!(
+                    "fail to setup '{}' branch for {} : resolution of {} failed",
+                    name_branch, project.remote_name, commit
+                );
+                return Ok(());
+            }
+        };
+
+        match repo.branch(name_branch, &target, false) {
+            Ok(_) => {}
+            Err(e) => {
+                println!(
+                    "fail to setup '{}' branch for {}: creating branch return error: {}",
+                    name_branch, project.remote_name, e
+                );
+                return Ok(());
+            }
+        }
+
+        println!(
+            "{}: branching repo '{}' with commit {} (branch={})",
+            name,
+            name_branch,
+            target.id(),
+            commit
+        );
+
+        if skip_push {
+            println!(
+                "git --git-dir={}/.git push origin {}",
+                dest_repo.into_os_string().into_string().unwrap(),
+                name_branch
+            );
+        } else {
+            git_push_to(
+                &app_params,
+                &project,
+                &repo,
+                PushSpecifier::Branch(name_branch),
+            );
+        }
+
+        Ok(())
+    })?;
+
+    /*
+    // then we re-loop over all repos, and tag/push then.
+    on_project_repos(app_params, |project, dest_repo, name| {
+        let repo = Repository::open(&dest_repo).expect("git repository");
+
+        let commit = find_branch_commit(&repo, project, branch, or_branch).expect("resolve branch");
+
+        println!("{}: tagging repo with commit {}", name, commit.id());
+
+        let dry_run = false;
+        let target = commit.into_object();
+        if dry_run {
+            ()
+        } else {
+            repo.tag_lightweight(tag, &target, false)
+                .expect("tag failed");
+        }
+
+        if skip_push {
+            println!(
+                "git --git-dir={}/.git push origin {}",
+                dest_repo.into_os_string().into_string().unwrap(),
+                tag
+            );
+            Ok(())
+        } else {
+            git_push_to(&app_params, &project, &repo, tag);
+            Ok(())
+        }
+    })?;
+    */
+
+    Ok(())
+}
+
 pub fn manifest_set_tag(
     app_params: &AppParams,
     branch: &str,
@@ -409,7 +533,7 @@ pub fn manifest_set_tag(
             );
             Ok(())
         } else {
-            git_push_to(&app_params, &project, &repo, tag);
+            git_push_to(&app_params, &project, &repo, PushSpecifier::Tag(tag));
             Ok(())
         }
     })?;

@@ -28,6 +28,7 @@ fn main() {
     const ARG_SPEC: &str = "spec";
     const ARG_PROJECT: &str = "project";
     const ARG_BRANCH: &str = "branch";
+    const ARG_COMMIT: &str = "commit";
     const ARG_OR_BRANCH: &str = "or-branch";
     const ARG_TAG: &str = "tag";
     const ARG_CONTINUE_ON_FAIL: &str = "continue-on-fail";
@@ -45,6 +46,7 @@ fn main() {
     const SUBCMD_MANIFEST_DEBUG: &str = "manifest-debug";
     const SUBCMD_MANIFEST_HAS_BRANCH: &str = "manifest-has-branch";
     const SUBCMD_MANIFEST_HAS_TAG: &str = "manifest-has-tag";
+    const SUBCMD_MANIFEST_SET_BRANCH: &str = "manifest-set-branch";
     const SUBCMD_MANIFEST_SET_TAG: &str = "manifest-set-tag";
     const SUBCMD_MANIFEST_HAS_CHANGE: &str = "manifest-has-change";
     const SUBCMD_MANIFEST_CHANGELOG: &str = "manifest-changelog";
@@ -100,6 +102,14 @@ fn main() {
     };
     let arg_branch = |s| {
         Arg::new(ARG_BRANCH)
+            .about(s)
+            .takes_value(true)
+            .required(true)
+            .multiple(false)
+    };
+
+    let arg_commit = |s| {
+        Arg::new(ARG_COMMIT)
             .about(s)
             .takes_value(true)
             .required(true)
@@ -167,6 +177,23 @@ fn main() {
                 .arg(&arg_manifest_file)
                 .arg(&arg_manifest_dest)
                 .arg(arg_tag("specify which tag to find")),
+        )
+        .subcommand(
+            App::new(SUBCMD_MANIFEST_SET_BRANCH)
+                .arg(&arg_skip_push)
+                .arg(&arg_project)
+                .arg(&arg_manifest_file)
+                .arg(&arg_manifest_dest)
+                .arg(&arg_continue_if_exists)
+                .arg(arg_branch("specify which branch to set to the project"))
+                .arg(arg_commit("specify which commit"))
+                .arg(
+                    Arg::new(ARG_OR_BRANCH)
+                        .about("set a backup branch if branch is not found")
+                        .long("or-branch")
+                        .required(false)
+                        .takes_value(true),
+                ),
         )
         .subcommand(
             App::new(SUBCMD_MANIFEST_SET_TAG)
@@ -288,6 +315,13 @@ fn main() {
             or_branch,
         )
         .unwrap()
+    } else if let Some(m) = matches.subcommand_matches(SUBCMD_MANIFEST_SET_BRANCH) {
+        set_manifest_options(&mut app_params, m);
+        let branch = m.value_of(ARG_BRANCH).unwrap();
+        let commit = m.value_of(ARG_COMMIT).unwrap();
+        let skip_push = m.is_present(ARG_SKIP_PUSH);
+        let continue_if_exists = m.is_present(ARG_CONTINUE_IF_EXISTS);
+        manifest_set_branch(&app_params, branch, commit, skip_push, continue_if_exists).unwrap()
     } else if let Some(m) = matches.subcommand_matches(SUBCMD_MANIFEST_HAS_CHANGE) {
         set_manifest_options(&mut app_params, m);
         let tag = m.value_of(ARG_TAG).unwrap();
