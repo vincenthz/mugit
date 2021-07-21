@@ -33,6 +33,7 @@ fn main() {
     const ARG_TAG: &str = "tag";
     const ARG_CONTINUE_ON_FAIL: &str = "continue-on-fail";
     const ARG_CONTINUE_IF_EXISTS: &str = "continue-if-exists";
+    const ARG_SHOW_NO_DIFF: &str = "show-no-diff";
     const ARG_SKIP_PUSH: &str = "skip-push";
     const ARG_REMOTE_NAME: &str = "remote-name";
     const ARG_REV1: &str = "rev1";
@@ -240,6 +241,13 @@ fn main() {
                         .required(true)
                         .takes_value(true)
                         .multiple(false),
+                )
+                .arg(
+                    Arg::new(ARG_SHOW_NO_DIFF)
+                        .about("show which repository have no diff")
+                        .long("show-no-diff")
+                        .required(false)
+                        .takes_value(false),
                 ),
         )
         .subcommand(
@@ -332,8 +340,9 @@ fn main() {
         set_manifest_options(&mut app_params, m);
         let rev1 = m.value_of(ARG_REV1).unwrap();
         let rev2 = m.value_of(ARG_REV2).unwrap();
+        let show_no_diff = m.is_present(ARG_SHOW_NO_DIFF);
         let continue_on_fail = m.is_present(ARG_CONTINUE_ON_FAIL);
-        manifest_changelog(&app_params, rev1, rev2, continue_on_fail).unwrap()
+        manifest_changelog(&app_params, rev1, rev2, continue_on_fail, show_no_diff).unwrap()
     } else if let Some(name) = matches.subcommand_name() {
         println!("error: unknown command {}\n\n{}", name, help)
     } else {

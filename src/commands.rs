@@ -600,6 +600,7 @@ pub fn manifest_changelog(
     rev1: &str,
     rev2: &str,
     continue_on_fail: bool,
+    show_no_diff: bool,
 ) -> anyhow::Result<()> {
     on_project_repos(app_params, |project, dest_repo, name| {
         let repo = Repository::open(&dest_repo).expect("git repository");
@@ -652,7 +653,10 @@ pub fn manifest_changelog(
         let output = std::str::from_utf8(&command.stdout).expect("output is utf8");
 
         if output.is_empty() {
-            //println!("## no differences for {}", name);
+            if show_no_diff {
+                println!("## no differences for {}", name);
+                println!("");
+            }
         } else {
             println!("## differences for {}", name);
             println!("{}", output);
