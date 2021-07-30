@@ -446,38 +446,6 @@ pub fn manifest_set_branch(
         Ok(())
     })?;
 
-    /*
-    // then we re-loop over all repos, and tag/push then.
-    on_project_repos(app_params, |project, dest_repo, name| {
-        let repo = Repository::open(&dest_repo).expect("git repository");
-
-        let commit = find_branch_commit(&repo, project, branch, or_branch).expect("resolve branch");
-
-        println!("{}: tagging repo with commit {}", name, commit.id());
-
-        let dry_run = false;
-        let target = commit.into_object();
-        if dry_run {
-            ()
-        } else {
-            repo.tag_lightweight(tag, &target, false)
-                .expect("tag failed");
-        }
-
-        if skip_push {
-            println!(
-                "git --git-dir={}/.git push origin {}",
-                dest_repo.into_os_string().into_string().unwrap(),
-                tag
-            );
-            Ok(())
-        } else {
-            git_push_to(&app_params, &project, &repo, tag);
-            Ok(())
-        }
-    })?;
-    */
-
     Ok(())
 }
 
