@@ -57,14 +57,14 @@ fn main() {
         .long("repo")
         .value_name("REPOSITORY-PATH")
         .default_value("./")
-        .about("Sets the path to repository")
+        .help("Sets the path to repository")
         .takes_value(true);
 
     let arg_project = Arg::new(ARG_PROJECT)
         .short('p')
         .long("project")
         .value_name("PROJECT")
-        .about("Sets the project")
+        .help("Sets the project")
         .takes_value(true)
         .required(false);
 
@@ -81,29 +81,29 @@ fn main() {
 
     let arg_continue_on_fail = Arg::new(ARG_CONTINUE_ON_FAIL)
         .long("continue-on-fail")
-        .about("continue if something fails")
+        .help("continue if something fails")
         .takes_value(false);
 
     let arg_continue_if_exists = Arg::new(ARG_CONTINUE_IF_EXISTS)
         .long("continue-if-exists")
-        .about("continue if tag already exists")
+        .help("continue if tag already exists")
         .takes_value(false);
 
     let arg_skip_push = Arg::new(ARG_SKIP_PUSH)
         .long("skip-push")
-        .about("Don't push, only print")
+        .help("Don't push, only print")
         .takes_value(false);
 
     let arg_tag = |s| {
         Arg::new(ARG_TAG)
-            .about(s)
+            .help(s)
             .takes_value(true)
             .required(true)
             .multiple(false)
     };
     let arg_branch = |s| {
         Arg::new(ARG_BRANCH)
-            .about(s)
+            .help(s)
             .takes_value(true)
             .required(true)
             .multiple(false)
@@ -111,7 +111,7 @@ fn main() {
 
     let arg_commit = |s| {
         Arg::new(ARG_COMMIT)
-            .about(s)
+            .help(s)
             .takes_value(true)
             .required(true)
             .multiple(false)
@@ -123,14 +123,14 @@ fn main() {
         .about("git helper")
         .arg(
             Arg::new(ARG_GIT_EXEC)
-                .about("use git executable instead of libgit2 for cloning,fetching and pushing")
+                .help("use git executable instead of libgit2 for cloning,fetching and pushing")
                 .long("git-exec")
                 .takes_value(false),
         )
         .arg(
             Arg::new(ARG_INIT_SKIP_LOAD)
                 .long("skip-init-load")
-                .about("skip initialiation loading of the config file"),
+                .help("skip initialiation loading of the config file"),
         )
         .subcommand(
             App::new(SUBCMD_VERSION_FIND)
@@ -142,14 +142,14 @@ fn main() {
                 .arg(&arg_repo)
                 .arg(
                     Arg::new(ARG_REMOTE_NAME)
-                        .about("specify remote name")
+                        .help("specify remote name")
                         .takes_value(true)
                         .required(true)
                         .multiple(false),
                 )
                 .arg(
                     Arg::new(ARG_BRANCH)
-                        .about("specify which branch to find")
+                        .help("specify which branch to find")
                         .takes_value(true)
                         .required(true)
                         .multiple(false),
@@ -190,7 +190,7 @@ fn main() {
                 .arg(arg_commit("specify which commit"))
                 .arg(
                     Arg::new(ARG_OR_BRANCH)
-                        .about("set a backup branch if branch is not found")
+                        .help("set a backup branch if branch is not found")
                         .long("or-branch")
                         .required(false)
                         .takes_value(true),
@@ -207,7 +207,7 @@ fn main() {
                 .arg(arg_branch("specify which branch the tag apply to"))
                 .arg(
                     Arg::new(ARG_OR_BRANCH)
-                        .about("set a backup branch if branch is not found")
+                        .help("set a backup branch if branch is not found")
                         .long("or-branch")
                         .required(false)
                         .takes_value(true),
@@ -230,21 +230,21 @@ fn main() {
                 .arg(&arg_manifest_dest)
                 .arg(
                     Arg::new(ARG_REV1)
-                        .about("old revision to start")
+                        .help("old revision to start")
                         .required(true)
                         .takes_value(true)
                         .multiple(false),
                 )
                 .arg(
                     Arg::new(ARG_REV2)
-                        .about("newer revision to end with")
+                        .help("newer revision to end with")
                         .required(true)
                         .takes_value(true)
                         .multiple(false),
                 )
                 .arg(
                     Arg::new(ARG_SHOW_NO_DIFF)
-                        .about("show which repository have no diff")
+                        .help("show which repository have no diff")
                         .long("show-no-diff")
                         .required(false)
                         .takes_value(false),
